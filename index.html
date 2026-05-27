@@ -1,94 +1,62 @@
 <script>
-(async () => {
+document.addEventListener('DOMContentLoaded', () => {
+
   let files = [];
   let idCounter = 0;
   let ffmpegReady = false;
   let ffmpegInstance = null;
 
-  const dropzone         = document.getElementById('dropzone');
-  const fileInput        = document.getElementById('fileInput');
-  const browseBtn        = document.getElementById('browseBtn');
-  const qualitySlider    = document.getElementById('qualitySlider');
-  const qualityVal       = document.getElementById('qualityVal');
-  const crfSlider        = document.getElementById('crfSlider');
-  const crfVal           = document.getElementById('crfVal');
-  const formatSelect     = document.getElementById('formatSelect');
-  const resizeSelect     = document.getElementById('resizeSelect');
-  const presetSelect     = document.getElementById('presetSelect');
+  // ---------- DOM ----------
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const browseBtn = document.getElementById('browseBtn');
+
+  const qualitySlider = document.getElementById('qualitySlider');
+  const qualityVal = document.getElementById('qualityVal');
+
+  const crfSlider = document.getElementById('crfSlider');
+  const crfVal = document.getElementById('crfVal');
+
+  const formatSelect = document.getElementById('formatSelect');
+  const resizeSelect = document.getElementById('resizeSelect');
+  const presetSelect = document.getElementById('presetSelect');
   const videoScaleSelect = document.getElementById('videoScaleSelect');
   const audioBitrateSelect = document.getElementById('audioBitrateSelect');
-  const fileListEl       = document.getElementById('fileList');
-  const emptyHint        = document.getElementById('emptyHint');
-  const actionRow        = document.getElementById('actionRow');
-  const processBtn       = document.getElementById('processBtn');
-  const downloadAllBtn   = document.getElementById('downloadAllBtn');
-  const summaryBar       = document.getElementById('summaryBar');
-  const sumOriginal      = document.getElementById('sumOriginal');
-  const sumCompressed    = document.getElementById('sumCompressed');
-  const sumSaved         = document.getElementById('sumSaved');
-  const sumPct           = document.getElementById('sumPct');
-  const ffmpegBanner     = document.getElementById('ffmpegBanner');
-  const ffmpegStatus     = document.getElementById('ffmpegStatus');
 
-  function fmtBytes(bytes) {
-    if (!bytes) return '0 B';
-    const k = 1024, sizes = ['B','KB','MB','GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+  const fileListEl = document.getElementById('fileList');
+  const emptyHint = document.getElementById('emptyHint');
+  const actionRow = document.getElementById('actionRow');
+  const processBtn = document.getElementById('processBtn');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+  const summaryBar = document.getElementById('summaryBar');
+  const sumOriginal = document.getElementById('sumOriginal');
+  const sumCompressed = document.getElementById('sumCompressed');
+  const sumSaved = document.getElementById('sumSaved');
+  const sumPct = document.getElementById('sumPct');
+
+  const ffmpegBanner = document.getElementById('ffmpegBanner');
+  const ffmpegStatus = document.getElementById('ffmpegStatus');
+
+  // ---------- SAFETY: never crash page ----------
+  function safe(el, fn) {
+    if (el && fn) fn(el);
   }
 
-  function fileIcon(type) {
-    if (type.startsWith('image/')) return '🖼';
-    if (type.startsWith('video/')) return '🎞';
-    return '📁';
-  }
-
-  function isVideo(type) {
-    return type.startsWith('video/');
-  }
-
-  function setProgress(id, pct, label) {
-    const fs = document.getElementById('fs-' + id);
-    if (!fs) return;
-    fs.innerHTML = `
-      <div class="progress-wrap">
-        <div class="progress-label">${label}</div>
-        <div class="progress-bar-wrap">
-          <div class="progress-bar-fill" style="width:${pct}%"></div>
-        </div>
-      </div>`;
-  }
-
-  // ---------------- FFmpeg INIT ----------------
+  // ---------- FFmpeg LOAD ----------
   async function loadFFmpeg() {
     try {
-      const { FFmpeg } = window.FFmpegWASM;
+      const lib = window.FFmpegWASM;
+
+      if (!lib) {
+        throw new Error("FFmpeg library not found");
+      }
+
+      const { FFmpeg } = lib;
 
       ffmpegInstance = new FFmpeg();
 
-      // SINGLE global log handler (IMPORTANT FIX)
-      ffmpegInstance.on('log', ({ message }) => {
-        const dur = message.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
-        const time = message.match(/time=\s*(\d+):(\d+):([\d.]+)/);
-
-        if (dur && ffmpegInstance._durationSetter) {
-          const total =
-            +dur[1] * 3600 +
-            +dur[2] * 60 +
-            +dur[3];
-
-          ffmpegInstance._durationSetter(total);
-        }
-
-        if (time && ffmpegInstance._progressHandler) {
-          const elapsed =
-            +time[1] * 3600 +
-            +time[2] * 60 +
-            +time[3];
-
-          ffmpegInstance._progressHandler(elapsed);
-        }
-      });
+      ffmpegInstance.on('log', () => { /* optional */ });
 
       await ffmpegInstance.load({
         coreURL: 'https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.10/ffmpeg-core.js',
@@ -96,120 +64,146 @@
       });
 
       ffmpegReady = true;
-      ffmpegBanner.className = 'ffmpeg-banner ready';
-      ffmpegStatus.textContent = 'FFmpeg ready — video compression enabled';
-      processBtn.disabled = false;
+
+      safe(ffmpegBanner, el => el.className = 'ffmpeg-banner ready');
+      safe(ffmpegStatus, el => el.textContent = 'FFmpeg ready — video enabled');
+      safe(processBtn, el => el.disabled = false);
 
     } catch (err) {
       console.error(err);
-      ffmpegBanner.className = 'ffmpeg-banner error';
-      ffmpegStatus.textContent = 'FFmpeg failed — image-only mode';
-      processBtn.disabled = false;
+
+      ffmpegReady = false;
+
+      safe(ffmpegBanner, el => el.className = 'ffmpeg-banner error');
+      safe(ffmpegStatus, el => el.textContent = 'FFmpeg failed — images only mode');
+
+      safe(processBtn, el => el.disabled = false);
     }
   }
 
   loadFFmpeg();
 
-  // ---------------- IMAGE ----------------
-  async function compressImage(entry) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = e => {
+  // ---------- HELPERS ----------
+  const isVideo = t => t?.startsWith('video/');
+
+  const fmt = b => {
+    if (!b) return '0 B';
+    const k = 1024;
+    const i = Math.floor(Math.log(b) / Math.log(k));
+    return (b / Math.pow(k, i)).toFixed(1) + ['B','KB','MB','GB'][i];
+  };
+
+  // ---------- IMAGE ----------
+  async function compressImage(file, entry) {
+    return new Promise(resolve => {
+      const r = new FileReader();
+
+      r.onload = e => {
         const img = new Image();
+
         img.onload = () => {
-          const quality = qualitySlider.value / 100;
-          const maxDim = +resizeSelect.value;
+          const q = qualitySlider.value / 100;
+          const max = +resizeSelect.value;
 
           let w = img.width, h = img.height;
 
-          if (maxDim && (w > maxDim || h > maxDim)) {
+          if (max && (w > max || h > max)) {
             if (w > h) {
-              h = Math.round(h * maxDim / w);
-              w = maxDim;
+              h = Math.round(h * max / w);
+              w = max;
             } else {
-              w = Math.round(w * maxDim / h);
-              h = maxDim;
+              w = Math.round(w * max / h);
+              h = max;
             }
           }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
+          const c = document.createElement('canvas');
+          c.width = w;
+          c.height = h;
 
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
 
-          const mime =
-            formatSelect.value === 'original'
-              ? entry.file.type
-              : formatSelect.value;
-
-          canvas.toBlob(resolve, mime || 'image/jpeg', quality);
+          c.toBlob(blob => resolve(blob), 'image/jpeg', q);
         };
+
         img.src = e.target.result;
       };
-      reader.readAsDataURL(entry.file);
+
+      r.readAsDataURL(file);
     });
   }
 
-  // ---------------- VIDEO (FIXED) ----------------
-  async function compressVideo(entry) {
+  // ---------- VIDEO ----------
+  async function compressVideo(file, entry) {
     const ff = ffmpegInstance;
 
-    const input = `in_${entry.id}` + (entry.file.name.match(/\.[^.]+$/)?.[0] || '.mp4');
+    const input = `in_${entry.id}.mp4`;
     const output = `out_${entry.id}.mp4`;
 
-    setProgress(entry.id, 5, 'Loading…');
-
-    const data = await FFmpegWASM.fetchFile(entry.file);
+    const data = await FFmpegWASM.fetchFile(file);
     await ff.writeFile(input, data);
 
-    const crf = crfSlider.value;
-    const preset = presetSelect.value;
+    const args = [
+      '-i', input,
+      '-c:v', 'libx264',
+      '-crf', crfSlider.value,
+      '-preset', presetSelect.value
+    ];
+
     const scale = +videoScaleSelect.value;
-    const audio = audioBitrateSelect.value;
-
-    const args = ['-i', input];
-
-    args.push('-c:v', 'libx264', '-crf', crf, '-preset', preset);
-
-    // FIXED SCALE FILTER (no broken quotes/min())
     if (scale > 0) {
       args.push('-vf', `scale=${scale}:-2`);
     }
 
+    const audio = audioBitrateSelect.value;
     if (audio === '0') {
       args.push('-an');
     } else {
       args.push('-c:a', 'aac', '-b:a', audio);
     }
 
-    args.push('-movflags', '+faststart', '-y', output);
+    args.push('-y', output);
 
-    let duration = 0;
-
-    ff._durationSetter = (d) => duration = d;
-
-    ff._progressHandler = (elapsed) => {
-      if (!duration) return;
-      const pct = Math.min(95, 10 + (elapsed / duration) * 85);
-      setProgress(entry.id, pct, `Encoding ${Math.round(elapsed)}s`);
-    };
-
-    setProgress(entry.id, 20, 'Transcoding…');
     await ff.exec(args);
 
-    setProgress(entry.id, 95, 'Finalizing…');
-
     const out = await ff.readFile(output);
-    const blob = new Blob([out.buffer], { type: 'video/mp4' });
 
-    try { await ff.deleteFile(input); } catch {}
-    try { await ff.deleteFile(output); } catch {}
-
-    return blob;
+    return new Blob([out.buffer], { type: 'video/mp4' });
   }
 
-  // ---------------- PROCESS ----------------
+  // ---------- FILE HANDLING ----------
+  function addFiles(list) {
+    for (const f of list) {
+      const entry = {
+        id: idCounter++,
+        file: f,
+        originalSize: f.size,
+        compressedBlob: null,
+        compressedSize: null,
+        status: 'idle'
+      };
+
+      files.push(entry);
+
+      const el = document.createElement('div');
+      el.className = 'file-item';
+      el.innerHTML = `
+        <div class="file-icon">${isVideo(f.type) ? '🎞' : '🖼'}</div>
+        <div class="file-info">
+          <div class="file-name">${f.name}</div>
+          <div class="file-meta">${fmt(f.size)}</div>
+        </div>
+        <div id="fs-${entry.id}" class="size-badge">${fmt(f.size)}</div>
+      `;
+
+      fileListEl.appendChild(el);
+    }
+
+    safe(emptyHint, el => el.style.display = 'none');
+    safe(actionRow, el => el.style.display = 'flex');
+  }
+
+  // ---------- PROCESS ----------
   processBtn.addEventListener('click', async () => {
     processBtn.disabled = true;
 
@@ -218,15 +212,15 @@
         let blob;
 
         if (isVideo(f.file.type)) {
-          if (!ffmpegReady) throw new Error('FFmpeg not ready');
-          blob = await compressVideo(f);
+          if (!ffmpegReady) throw new Error("FFmpeg not ready");
+          blob = await compressVideo(f.file, f);
         } else {
-          blob = await compressImage(f);
+          blob = await compressImage(f.file, f);
         }
 
         f.compressedBlob = blob;
         f.compressedSize = blob.size;
-        f.status = blob.size < f.originalSize ? 'done' : 'skipped';
+        f.status = 'done';
 
       } catch (e) {
         console.error(e);
@@ -234,13 +228,22 @@
       }
 
       const el = document.getElementById('fs-' + f.id);
-      if (el) el.textContent = f.status;
-
-      await new Promise(r => setTimeout(r, 30));
+      if (el && f.compressedSize) {
+        el.textContent = fmt(f.compressedSize);
+      }
     }
 
     processBtn.disabled = false;
   });
 
-})();
+  // ---------- EVENTS ----------
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    addFiles(e.dataTransfer.files);
+  });
+
+  browseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+});
 </script>
