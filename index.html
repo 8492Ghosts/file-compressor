@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Storage Reducer — Shrink Files Instantly</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
 
   :root {
     --bg: #0d0d0f;
@@ -30,7 +30,6 @@
     overflow-x: hidden;
   }
 
-  /* Noise texture overlay */
   body::before {
     content: '';
     position: fixed;
@@ -42,538 +41,215 @@
   }
 
   .container {
-    position: relative;
-    z-index: 1;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 48px 24px 80px;
+    position: relative; z-index: 1;
+    max-width: 860px; margin: 0 auto; padding: 48px 24px 80px;
   }
 
-  /* Header */
-  header {
-    margin-bottom: 56px;
-  }
+  header { margin-bottom: 48px; }
 
   .eyebrow {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
   }
-
-  .eyebrow::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 1px;
-    background: var(--accent);
-  }
+  .eyebrow::before { content:''; display:inline-block; width:24px; height:1px; background:var(--accent); }
 
   h1 {
-    font-family: 'Calibri', sans-serif;
-    font-size: clamp(2.4rem, 6vw, 4rem);
-    font-weight: 800;
-    line-height: 1.0;
-    letter-spacing: -0.03em;
-    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800;
+    line-height: 1.0; letter-spacing: -0.03em;
   }
+  h1 span { color: var(--accent); }
 
-  h1 span {
-    color: var(--accent);
+  .subtitle { margin-top:14px; font-size:13px; color:var(--muted); line-height:1.6; max-width:480px; }
+
+  /* Banner */
+  .banner {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 18px; border-radius:10px;
+    background:var(--surface); border:1px solid var(--border);
+    margin-bottom:20px; font-size:12px; color:var(--muted);
+    transition: border-color 0.3s;
   }
+  .banner .dot { width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0; }
+  .banner.loading .dot { background:#f0a500; animation:pulse 1s ease-in-out infinite; }
+  .banner.ready   .dot { background:var(--success); }
+  .banner.error   .dot { background:var(--danger); }
+  .banner.ready { border-color: rgba(87,255,200,0.2); }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-  .subtitle {
-    margin-top: 16px;
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.6;
-    max-width: 440px;
-  }
-
-  /* Drop zone */
+  /* Dropzone */
   .dropzone {
-    position: relative;
-    border: 1.5px dashed var(--border);
-    border-radius: 16px;
-    padding: 56px 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    background: var(--surface);
-    margin-bottom: 28px;
-    overflow: hidden;
+    position:relative; border:1.5px dashed var(--border); border-radius:16px;
+    padding:52px 40px; text-align:center; cursor:pointer;
+    transition:border-color 0.2s,background 0.2s;
+    background:var(--surface); margin-bottom:24px; overflow:hidden;
   }
-
   .dropzone::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(200,255,87,0.05) 0%, transparent 70%);
-    pointer-events: none;
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 50% 0%,rgba(200,255,87,0.05) 0%,transparent 70%);
+    pointer-events:none;
   }
-
-  .dropzone.drag-over {
-    border-color: var(--accent);
-    background: rgba(200,255,87,0.04);
-  }
-
-  .dropzone:hover {
-    border-color: #444;
-  }
+  .dropzone.drag-over { border-color:var(--accent); background:rgba(200,255,87,0.04); }
+  .dropzone:hover { border-color:#444; }
 
   .drop-icon {
-    width: 52px;
-    height: 52px;
-    margin: 0 auto 20px;
-    background: var(--surface2);
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
+    width:52px;height:52px;margin:0 auto 18px;
+    background:var(--surface2);border-radius:12px;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:22px;
   }
-
-  .drop-title {
-    font-family: 'Calibri', sans-serif;
-    font-size: 17px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .drop-sub {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  .drop-sub span {
-    color: var(--accent);
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  .supported {
-    margin-top: 16px;
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
+  .drop-title { font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px; }
+  .drop-sub { font-size:12px;color:var(--muted);line-height:1.6; }
+  .drop-sub span { color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px; }
+  .supported { margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap; }
   .tag {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 4px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--muted);
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    padding:4px 10px;border-radius:4px;
+    background:var(--surface2);border:1px solid var(--border);color:var(--muted);
   }
-
-  #fileInput { display: none; }
+  #fileInput { display:none; }
 
   /* Controls */
   .controls-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 28px;
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:16px;padding:28px;margin-bottom:24px;
   }
-
   .controls-title {
-    font-family: 'Calibri', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 24px;
+    font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+    letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:20px;
   }
-
-  .control-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
+  .section-label {
+    font-size:10px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:14px;margin-top:18px;
+    padding-bottom:8px;border-bottom:1px solid var(--border);
   }
-
-  @media (max-width: 560px) {
-    .control-row { grid-template-columns: 1fr; }
-  }
+  .control-row { display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px; }
+  @media(max-width:560px){.control-row{grid-template-columns:1fr;}}
 
   .control-group label {
-    display: block;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
+    display:block;font-size:11px;letter-spacing:0.1em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:10px;
   }
-
-  /* Slider */
-  .slider-wrap {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
+  .slider-wrap { display:flex;align-items:center;gap:14px; }
 
   input[type="range"] {
-    flex: 1;
-    appearance: none;
-    height: 4px;
-    background: var(--surface2);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
+    flex:1;appearance:none;height:4px;background:var(--surface2);
+    border-radius:2px;outline:none;cursor:pointer;
   }
-
   input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    transition: transform 0.15s;
+    appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);cursor:pointer;transition:transform 0.15s;
   }
+  input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.3);}
+  .slider-val{font-size:13px;color:var(--accent);min-width:36px;text-align:right;}
 
-  input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.3);
-  }
-
-  .slider-val {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--accent);
-    min-width: 36px;
-    text-align: right;
-  }
-
-  /* Select */
   select {
-    width: 100%;
-    appearance: none;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    padding: 10px 36px 10px 14px;
-    cursor: pointer;
-    outline: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666672' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    transition: border-color 0.2s;
+    width:100%;appearance:none;background:var(--surface2);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;
+    padding:10px 36px 10px 14px;cursor:pointer;outline:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666672' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;transition:border-color 0.2s;
   }
+  select:focus{border-color:var(--accent);}
 
-  select:focus { border-color: var(--accent); }
-
-  /* Checkboxes */
-  .checkbox-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 4px;
+  .checkbox-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;}
+  .checkbox-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted);transition:color 0.15s;}
+  .checkbox-label:hover{color:var(--text);}
+  .checkbox-label input[type="checkbox"]{
+    appearance:none;width:16px;height:16px;border:1.5px solid var(--border);
+    border-radius:4px;background:var(--surface2);cursor:pointer;position:relative;
+    transition:border-color 0.15s,background 0.15s;
   }
-
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    color: var(--muted);
-    transition: color 0.15s;
-  }
-
-  .checkbox-label:hover { color: var(--text); }
-
-  .checkbox-label input[type="checkbox"] {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface2);
-    cursor: pointer;
-    position: relative;
-    transition: border-color 0.15s, background 0.15s;
-  }
-
-  .checkbox-label input[type="checkbox"]:checked {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .checkbox-label input[type="checkbox"]:checked::after {
-    content: '';
-    position: absolute;
-    left: 4px;
-    top: 1px;
-    width: 5px;
-    height: 9px;
-    border: 2px solid #0d0d0f;
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg);
+  .checkbox-label input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent);}
+  .checkbox-label input[type="checkbox"]:checked::after{
+    content:'';position:absolute;left:4px;top:1px;width:5px;height:9px;
+    border:2px solid #0d0d0f;border-top:none;border-left:none;transform:rotate(45deg);
   }
 
   /* File list */
-  .file-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 28px;
+  .file-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+  .file-item{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px 20px;display:flex;align-items:center;gap:16px;
+    animation:slideIn 0.25s ease;
   }
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-  .file-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    animation: slideIn 0.25s ease;
+  .file-icon{
+    width:38px;height:38px;border-radius:8px;background:var(--surface2);
+    border:1px solid var(--border);display:flex;align-items:center;
+    justify-content:center;font-size:16px;flex-shrink:0;
   }
+  .file-info{flex:1;min-width:0;}
+  .file-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+  .file-meta{font-size:11px;color:var(--muted);}
+  .file-status{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:260px;}
 
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+  .size-badge{
+    font-size:11px;font-family:'DM Mono',monospace;
+    padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--muted);white-space:nowrap;
   }
+  .size-badge.saved{border-color:rgba(87,255,200,0.3);background:rgba(87,255,200,0.07);color:var(--success);}
 
-  .file-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
+  .progress-wrap{display:flex;flex-direction:column;gap:5px;min-width:140px;}
+  .progress-label{font-size:10px;color:var(--muted);}
+  .progress-bar-wrap{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.4s ease;}
+
+  .remove-btn{
+    background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:16px;padding:4px;border-radius:4px;transition:color 0.15s;line-height:1;
   }
+  .remove-btn:hover{color:var(--danger);}
 
-  .file-info { flex: 1; min-width: 0; }
-
-  .file-name {
-    font-size: 13px;
-    font-weight: 400;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
+  /* Actions */
+  .action-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .btn-process{
+    font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+    letter-spacing:0.04em;padding:14px 36px;
+    background:var(--accent);color:#0d0d0f;
+    border:none;border-radius:10px;cursor:pointer;
+    transition:transform 0.15s,box-shadow 0.15s,opacity 0.15s;
+    box-shadow:0 0 32px rgba(200,255,87,0.18);
   }
+  .btn-process:hover{transform:translateY(-1px);box-shadow:0 0 48px rgba(200,255,87,0.28);}
+  .btn-process:active{transform:translateY(0);}
+  .btn-process:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none;}
 
-  .file-meta {
-    font-size: 11px;
-    color: var(--muted);
+  .btn-secondary{
+    font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+    letter-spacing:0.04em;padding:14px 28px;
+    background:transparent;color:var(--accent2);
+    border:1.5px solid var(--accent2);border-radius:10px;
+    cursor:pointer;transition:background 0.15s;display:none;
   }
+  .btn-secondary:hover{background:rgba(87,200,255,0.08);}
 
-  .file-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
+  /* Summary */
+  .summary-bar{
+    margin-top:24px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:20px 28px;display:none;
+    align-items:center;gap:40px;flex-wrap:wrap;
   }
+  .summary-item{display:flex;flex-direction:column;gap:4px;}
+  .summary-label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
+  .summary-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+  .summary-value.hi{color:var(--accent);}
+  .sdiv{width:1px;height:40px;background:var(--border);}
 
-  .size-badge {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    white-space: nowrap;
+  .empty-hint{text-align:center;padding:24px;color:var(--muted);font-size:12px;display:none;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{animation:spin 0.8s linear infinite;display:inline-block;}
+
+  [data-tip]{position:relative;cursor:help;}
+  [data-tip]::after{
+    content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+    background:#222228;border:1px solid var(--border);border-radius:6px;
+    padding:6px 10px;font-size:11px;white-space:nowrap;color:var(--muted);
+    pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:10;
   }
-
-  .size-badge.saved {
-    border-color: rgba(87,255,200,0.3);
-    background: rgba(87,255,200,0.07);
-    color: var(--success);
-  }
-
-  .progress-bar-wrap {
-    width: 80px;
-    height: 3px;
-    background: var(--surface2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    width: 0%;
-    transition: width 0.4s ease;
-  }
-
-  .remove-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: color 0.15s;
-    line-height: 1;
-  }
-
-  .remove-btn:hover { color: var(--danger); }
-
-  /* Process button */
-  .action-row {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .btn-process {
-    font-family: 'Calibri', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 14px 36px;
-    background: var(--accent);
-    color: #0d0d0f;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-    box-shadow: 0 0 32px rgba(200,255,87,0.18);
-  }
-
-  .btn-process:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 0 48px rgba(200,255,87,0.28);
-  }
-
-  .btn-process:active { transform: translateY(0); }
-
-  .btn-process:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .btn-download-all {
-    font-family: 'Calibri', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 14px 28px;
-    background: transparent;
-    color: var(--accent2);
-    border: 1.5px solid var(--accent2);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s;
-    display: none;
-  }
-
-  .btn-download-all:hover {
-    background: rgba(87,200,255,0.08);
-  }
-
-  /* Summary bar */
-  .summary-bar {
-    margin-top: 28px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px 28px;
-    display: none;
-    align-items: center;
-    gap: 40px;
-    flex-wrap: wrap;
-  }
-
-  .summary-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .summary-label {
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .summary-value {
-    font-family: 'Calibri', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--text);
-  }
-
-  .summary-value.highlight {
-    color: var(--accent);
-  }
-
-  .summary-divider {
-    width: 1px;
-    height: 40px;
-    background: var(--border);
-  }
-
-  /* Empty state */
-  .empty-hint {
-    text-align: center;
-    padding: 24px;
-    color: var(--muted);
-    font-size: 12px;
-    display: none;
-  }
-
-  /* Spinner */
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
-
-  /* Tooltip */
-  [data-tip] {
-    position: relative;
-    cursor: help;
-  }
-  [data-tip]::after {
-    content: attr(data-tip);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #222228;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 11px;
-    white-space: nowrap;
-    color: var(--muted);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s;
-    z-index: 10;
-  }
-  [data-tip]:hover::after { opacity: 1; }
+  [data-tip]:hover::after{opacity:1;}
 </style>
 </head>
 <body>
@@ -582,38 +258,42 @@
   <header>
     <div class="eyebrow">Storage Reducer</div>
     <h1>Shrink.<br><span>Save Space.</span></h1>
-    <p class="subtitle">Compress images, PDFs, and videos directly in your browser — no uploads, no server, 100% private.</p>
+    <p class="subtitle">Compress images and videos in your browser using FFmpeg WebAssembly. No uploads, no server, 100% private.</p>
   </header>
+
+  <div class="banner loading" id="banner">
+    <div class="dot"></div>
+    <span id="bannerMsg">Loading FFmpeg engine… (~31 MB, cached after first load)</span>
+  </div>
 
   <!-- Drop Zone -->
   <div class="dropzone" id="dropzone">
     <div class="drop-icon">📦</div>
     <div class="drop-title">Drop files here</div>
-    <p class="drop-sub">or <span id="browseBtn">browse your files</span> to get started</p>
+    <p class="drop-sub">or <span id="browseBtn">browse your files</span></p>
     <div class="supported">
       <span class="tag">JPEG / PNG / WebP</span>
       <span class="tag">GIF</span>
-      <span class="tag">PDF</span>
-      <span class="tag">MP4 / WebM</span>
+      <span class="tag">MP4 / MOV / WebM / AVI / MKV</span>
     </div>
   </div>
-  <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/webm,application/pdf">
+  <input type="file" id="fileInput" multiple accept="image/*,video/*">
 
   <!-- Controls -->
-  <div class="controls-card" id="controlsCard">
+  <div class="controls-card">
     <div class="controls-title">Compression Settings</div>
 
+    <div class="section-label">🖼 Images</div>
     <div class="control-row">
       <div class="control-group">
-        <label data-tip="Lower quality = smaller file">Image Quality</label>
+        <label data-tip="Lower = smaller file">Image Quality</label>
         <div class="slider-wrap">
           <input type="range" id="qualitySlider" min="1" max="100" value="72">
           <span class="slider-val" id="qualityVal">72%</span>
         </div>
       </div>
-
       <div class="control-group">
-        <label data-tip="Output format for images">Output Format</label>
+        <label>Output Format</label>
         <select id="formatSelect">
           <option value="original">Keep Original</option>
           <option value="image/jpeg">JPEG</option>
@@ -622,32 +302,64 @@
         </select>
       </div>
     </div>
-
     <div class="control-row">
       <div class="control-group">
-        <label data-tip="Resize large images down">Max Dimension (px)</label>
+        <label data-tip="Downscale large images">Max Dimension (px)</label>
         <select id="resizeSelect">
           <option value="0">No resizing</option>
           <option value="3840">3840px (4K)</option>
-          <option value="2560">2560px (2.5K)</option>
           <option value="1920" selected>1920px (Full HD)</option>
           <option value="1280">1280px (HD)</option>
           <option value="800">800px (Web)</option>
         </select>
       </div>
-
       <div class="control-group">
-        <label>Extra Options</label>
+        <label>Options</label>
         <div class="checkbox-row">
-          <label class="checkbox-label">
-            <input type="checkbox" id="stripMeta" checked>
-            Strip metadata
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="keepAspect" checked>
-            Keep aspect ratio
-          </label>
+          <label class="checkbox-label"><input type="checkbox" id="stripMeta" checked> Strip metadata</label>
         </div>
+      </div>
+    </div>
+
+    <div class="section-label">🎞 Video (FFmpeg H.264)</div>
+    <div class="control-row">
+      <div class="control-group">
+        <label data-tip="18=near-lossless, 28=default, 40=very compressed">CRF Quality</label>
+        <div class="slider-wrap">
+          <input type="range" id="crfSlider" min="18" max="45" value="28">
+          <span class="slider-val" id="crfVal">28</span>
+        </div>
+      </div>
+      <div class="control-group">
+        <label data-tip="Speed vs file size tradeoff">Encode Speed</label>
+        <select id="presetSelect">
+          <option value="ultrafast">Ultrafast (largest)</option>
+          <option value="superfast">Superfast</option>
+          <option value="fast" selected>Fast (recommended)</option>
+          <option value="medium">Medium</option>
+          <option value="slow">Slow (smallest)</option>
+        </select>
+      </div>
+    </div>
+    <div class="control-row">
+      <div class="control-group">
+        <label>Video Scale</label>
+        <select id="videoScaleSelect">
+          <option value="0">Keep original</option>
+          <option value="1920">1080p (1920px wide)</option>
+          <option value="1280" selected>720p (1280px wide)</option>
+          <option value="854">480p (854px wide)</option>
+          <option value="640">360p (640px wide)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Audio Bitrate</label>
+        <select id="audioBitrateSelect">
+          <option value="128k" selected>128 kbps (standard)</option>
+          <option value="96k">96 kbps</option>
+          <option value="64k">64 kbps (small)</option>
+          <option value="0">Remove audio</option>
+        </select>
       </div>
     </div>
   </div>
@@ -656,126 +368,139 @@
   <div class="file-list" id="fileList"></div>
   <div class="empty-hint" id="emptyHint">Add some files above to get started ↑</div>
 
-  <!-- Actions -->
   <div class="action-row" id="actionRow" style="display:none;">
-    <button class="btn-process" id="processBtn">Compress All Files</button>
-    <button class="btn-download-all" id="downloadAllBtn">⬇ Download All</button>
+    <button class="btn-process" id="processBtn" disabled>Compress All Files</button>
+    <button class="btn-secondary" id="downloadAllBtn">⬇ Download All</button>
   </div>
 
-  <!-- Summary -->
   <div class="summary-bar" id="summaryBar">
     <div class="summary-item">
-      <span class="summary-label">Original Size</span>
-      <span class="summary-value" id="sumOriginal">—</span>
+      <span class="summary-label">Original</span>
+      <span class="summary-value" id="sumOrig">—</span>
     </div>
-    <div class="summary-divider"></div>
+    <div class="sdiv"></div>
     <div class="summary-item">
-      <span class="summary-label">Compressed Size</span>
-      <span class="summary-value" id="sumCompressed">—</span>
+      <span class="summary-label">Compressed</span>
+      <span class="summary-value" id="sumComp">—</span>
     </div>
-    <div class="summary-divider"></div>
+    <div class="sdiv"></div>
     <div class="summary-item">
-      <span class="summary-label">Space Saved</span>
-      <span class="summary-value highlight" id="sumSaved">—</span>
+      <span class="summary-label">Saved</span>
+      <span class="summary-value hi" id="sumSaved">—</span>
     </div>
-    <div class="summary-divider"></div>
+    <div class="sdiv"></div>
     <div class="summary-item">
       <span class="summary-label">Reduction</span>
-      <span class="summary-value highlight" id="sumPct">—</span>
+      <span class="summary-value hi" id="sumPct">—</span>
     </div>
   </div>
 
 </div>
 
+<!-- Load ffmpeg UMD + util from jsDelivr -->
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/index.js"></script>
 <script>
-  // ---------- State ----------
-  let files = []; // { id, file, originalSize, compressedBlob, compressedSize, status }
-  let idCounter = 0;
+(async () => {
+  // ── Globals ────────────────────────────────────────────────────────────
+  let files = [], idCounter = 0;
+  let ffReady = false, ff = null;
 
-  // ---------- DOM ----------
-  const dropzone      = document.getElementById('dropzone');
-  const fileInput     = document.getElementById('fileInput');
-  const browseBtn     = document.getElementById('browseBtn');
-  const qualitySlider = document.getElementById('qualitySlider');
-  const qualityVal    = document.getElementById('qualityVal');
-  const formatSelect  = document.getElementById('formatSelect');
-  const resizeSelect  = document.getElementById('resizeSelect');
-  const stripMeta     = document.getElementById('stripMeta');
-  const fileListEl    = document.getElementById('fileList');
-  const emptyHint     = document.getElementById('emptyHint');
-  const actionRow     = document.getElementById('actionRow');
-  const processBtn    = document.getElementById('processBtn');
-  const downloadAllBtn= document.getElementById('downloadAllBtn');
-  const summaryBar    = document.getElementById('summaryBar');
-  const sumOriginal   = document.getElementById('sumOriginal');
-  const sumCompressed = document.getElementById('sumCompressed');
-  const sumSaved      = document.getElementById('sumSaved');
-  const sumPct        = document.getElementById('sumPct');
+  // ── DOM ────────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const dropzone    = $('dropzone'),   fileInput  = $('fileInput');
+  const browseBtn   = $('browseBtn'),  bannerEl   = $('banner');
+  const bannerMsg   = $('bannerMsg'),  fileListEl = $('fileList');
+  const emptyHint   = $('emptyHint'), actionRow  = $('actionRow');
+  const processBtn  = $('processBtn'), dlAllBtn   = $('downloadAllBtn');
+  const summaryBar  = $('summaryBar');
+  const qualitySlider   = $('qualitySlider'), qualityVal   = $('qualityVal');
+  const crfSlider       = $('crfSlider'),     crfVal       = $('crfVal');
+  const formatSelect    = $('formatSelect'),  resizeSelect = $('resizeSelect');
+  const presetSelect    = $('presetSelect'),  videoScaleSel= $('videoScaleSelect');
+  const audioBitrateSel = $('audioBitrateSelect');
 
-  // ---------- Helpers ----------
-  function fmtBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024, sizes = ['B','KB','MB','GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  // ── Load FFmpeg ────────────────────────────────────────────────────────
+  async function toBlobURL(url, mimeType) {
+    const resp = await fetch(url);
+    const blob = new Blob([await resp.blob()], { type: mimeType });
+    return URL.createObjectURL(blob);
   }
 
-  function fileIcon(type) {
-    if (type.startsWith('image/')) return '🖼';
-    if (type.startsWith('video/')) return '🎞';
-    if (type === 'application/pdf') return '📄';
-    return '📁';
+  async function loadFFmpeg() {
+    try {
+      // FFmpegUtil exposes fetchFile; FFmpegWASM exposes FFmpeg class
+      // Both scripts set globals on window: FFmpegWASM and FFmpegUtil
+      const FFmpegClass = (window.FFmpegWASM || window['@ffmpeg/ffmpeg'])?.FFmpeg;
+      if (!FFmpegClass) throw new Error('FFmpeg class not found on window');
+
+      ff = new FFmpegClass();
+
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+      await ff.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`,   'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+
+      ffReady = true;
+      bannerEl.className = 'banner ready';
+      bannerMsg.textContent = 'FFmpeg ready — video compression enabled';
+      processBtn.disabled = files.length === 0;
+    } catch(err) {
+      console.error('FFmpeg load error:', err);
+      bannerEl.className = 'banner error';
+      bannerMsg.textContent = 'FFmpeg failed to load (' + err.message + ') — images still work';
+      processBtn.disabled = files.length === 0;
+    }
   }
 
-  function outputExtension(mime) {
-    if (mime === 'image/webp') return '.webp';
-    if (mime === 'image/jpeg') return '.jpg';
-    if (mime === 'image/png') return '.png';
-    return null;
-  }
+  // Defer load slightly so scripts settle
+  setTimeout(loadFFmpeg, 200);
 
-  // ---------- Drag & Drop ----------
-  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  // ── Helpers ────────────────────────────────────────────────────────────
+  const fmtBytes = b => {
+    if (!b) return '0 B';
+    const k = 1024, s = ['B','KB','MB','GB'], i = Math.floor(Math.log(b)/Math.log(k));
+    return +(b/Math.pow(k,i)).toFixed(1) + ' ' + s[i];
+  };
+  const fileIcon = t => t.startsWith('image/') ? '🖼' : t.startsWith('video/') ? '🎞' : '📁';
+  const isVideo  = t => t.startsWith('video/');
+  const imgExts  = { 'image/webp':'.webp', 'image/jpeg':'.jpg', 'image/png':'.png' };
+
+  // ── Drag & Drop ────────────────────────────────────────────────────────
+  dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-  dropzone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropzone.classList.remove('drag-over');
-    addFiles(e.dataTransfer.files);
-  });
+  dropzone.addEventListener('drop',      e => { e.preventDefault(); dropzone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
   dropzone.addEventListener('click', () => fileInput.click());
   browseBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
-  fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+  fileInput.addEventListener('change',  () => { addFiles(fileInput.files); fileInput.value = ''; });
+  qualitySlider.addEventListener('input', () => qualityVal.textContent = qualitySlider.value + '%');
+  crfSlider.addEventListener('input',     () => crfVal.textContent = crfSlider.value);
 
-  // ---------- Quality slider ----------
-  qualitySlider.addEventListener('input', () => {
-    qualityVal.textContent = qualitySlider.value + '%';
-  });
-
-  // ---------- Add files ----------
-  function addFiles(rawFiles) {
-    for (const f of rawFiles) {
-      const entry = { id: idCounter++, file: f, originalSize: f.size, compressedBlob: null, compressedSize: null, status: 'idle' };
-      files.push(entry);
-      renderFileItem(entry);
+  // ── Files ──────────────────────────────────────────────────────────────
+  function addFiles(raw) {
+    for (const f of raw) {
+      const e = { id: idCounter++, file: f, originalSize: f.size, compressedBlob: null, compressedSize: null, status: 'idle' };
+      files.push(e);
+      renderItem(e);
     }
     syncUI();
   }
 
   function syncUI() {
-    const hasFiles = files.length > 0;
-    emptyHint.style.display = hasFiles ? 'none' : 'block';
-    actionRow.style.display = hasFiles ? 'flex' : 'none';
-    const anyDone = files.some(f => f.status === 'done');
-    downloadAllBtn.style.display = anyDone ? 'block' : 'none';
-    summaryBar.style.display = anyDone ? 'flex' : 'none';
-    if (anyDone) updateSummary();
+    const has = files.length > 0;
+    emptyHint.style.display  = has ? 'none' : 'block';
+    actionRow.style.display   = has ? 'flex' : 'none';
+    processBtn.disabled = !has; // FFmpeg may still be loading but images work regardless
+    const done = files.some(f => f.status === 'done' || f.status === 'skipped');
+    dlAllBtn.style.display    = done ? 'block' : 'none';
+    summaryBar.style.display  = done ? 'flex'  : 'none';
+    if (done) updateSummary();
   }
 
-  // ---------- Render ----------
-  function renderFileItem(entry) {
+  function renderItem(entry) {
     const el = document.createElement('div');
-    el.className = 'file-item';
-    el.id = 'fi-' + entry.id;
+    el.className = 'file-item'; el.id = 'fi-' + entry.id;
     el.innerHTML = `
       <div class="file-icon">${fileIcon(entry.file.type)}</div>
       <div class="file-info">
@@ -785,66 +510,65 @@
       <div class="file-status" id="fs-${entry.id}">
         <span class="size-badge">${fmtBytes(entry.originalSize)}</span>
       </div>
-      <button class="remove-btn" title="Remove" onclick="removeFile(${entry.id})">✕</button>
-    `;
+      <button class="remove-btn" onclick="removeFile(${entry.id})">✕</button>`;
     fileListEl.appendChild(el);
   }
 
-  function updateFileStatus(entry) {
-    const fs = document.getElementById('fs-' + entry.id);
-    if (!fs) return;
-    if (entry.status === 'processing') {
-      fs.innerHTML = `<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%"></div></div>`;
-    } else if (entry.status === 'done') {
-      const pct = Math.round((1 - entry.compressedSize / entry.originalSize) * 100);
-      const label = pct > 0 ? `−${pct}%` : `+${Math.abs(pct)}%`;
-      fs.innerHTML = `
-        <span class="size-badge">${fmtBytes(entry.originalSize)}</span>
-        <span style="color:var(--muted);font-size:11px">→</span>
-        <span class="size-badge saved">${fmtBytes(entry.compressedSize)} <span style="color:var(--success)">${label}</span></span>
-        <button onclick="downloadFile(${entry.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-size:11px;padding:4px 10px;cursor:pointer;font-family:'DM Mono',monospace;">↓</button>
-      `;
-    } else if (entry.status === 'skipped') {
-      fs.innerHTML = `<span class="size-badge" style="color:var(--muted);">Unchanged</span>`;
-    } else if (entry.status === 'unsupported') {
-      fs.innerHTML = `<span class="size-badge" style="color:var(--danger);">Unsupported</span>`;
-    }
-  }
-
-  window.removeFile = function(id) {
+  window.removeFile = id => {
     files = files.filter(f => f.id !== id);
     const el = document.getElementById('fi-' + id);
     if (el) el.remove();
     syncUI();
   };
 
-  // ---------- Compress ----------
-  async function compressImage(entry) {
-    return new Promise((resolve) => {
+  function setProgress(id, pct, label) {
+    const fs = document.getElementById('fs-' + id);
+    if (!fs) return;
+    fs.innerHTML = `<div class="progress-wrap">
+      <div class="progress-label">${label}</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  function setDone(entry) {
+    const fs = document.getElementById('fs-' + entry.id);
+    if (!fs) return;
+    if (entry.status === 'done') {
+      const pct = Math.round((1 - entry.compressedSize / entry.originalSize) * 100);
+      const lbl = pct > 0 ? `−${pct}%` : `+${Math.abs(pct)}%`;
+      fs.innerHTML = `
+        <span class="size-badge">${fmtBytes(entry.originalSize)}</span>
+        <span style="color:var(--muted);font-size:11px">→</span>
+        <span class="size-badge saved">${fmtBytes(entry.compressedSize)} <span>${lbl}</span></span>
+        <button onclick="dlFile(${entry.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-size:11px;padding:4px 10px;cursor:pointer;font-family:'DM Mono',monospace;">↓</button>`;
+    } else if (entry.status === 'skipped') {
+      fs.innerHTML = `<span class="size-badge" style="color:var(--muted)">Already optimal</span>
+        <button onclick="dlFile(${entry.id})" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-size:11px;padding:4px 10px;cursor:pointer;font-family:'DM Mono',monospace;">↓</button>`;
+    } else {
+      fs.innerHTML = `<span class="size-badge" style="color:var(--danger)">Error</span>`;
+    }
+  }
+
+  // ── Image Compression ──────────────────────────────────────────────────
+  function compressImage(entry) {
+    return new Promise(resolve => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         const img = new Image();
         img.onload = () => {
-          const quality = parseInt(qualitySlider.value) / 100;
-          const maxDim = parseInt(resizeSelect.value);
+          const q = parseInt(qualitySlider.value) / 100;
+          const max = parseInt(resizeSelect.value);
           let w = img.width, h = img.height;
-
-          if (maxDim > 0 && (w > maxDim || h > maxDim)) {
-            if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
-            else         { w = Math.round(w * maxDim / h); h = maxDim; }
+          if (max > 0 && (w > max || h > max)) {
+            if (w >= h) { h = Math.round(h * max / w); w = max; }
+            else        { w = Math.round(w * max / h); h = max; }
           }
-
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-
-          let outMime = formatSelect.value === 'original' ? (entry.file.type || 'image/jpeg') : formatSelect.value;
-          if (!['image/jpeg','image/webp','image/png'].includes(outMime)) outMime = 'image/jpeg';
-
-          canvas.toBlob(blob => {
-            resolve(blob);
-          }, outMime, outMime === 'image/png' ? undefined : quality);
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          let mime = formatSelect.value === 'original' ? (entry.file.type || 'image/jpeg') : formatSelect.value;
+          if (!['image/jpeg','image/webp','image/png'].includes(mime)) mime = 'image/jpeg';
+          canvas.toBlob(blob => resolve(blob), mime, mime === 'image/png' ? undefined : q);
         };
         img.src = e.target.result;
       };
@@ -852,109 +576,154 @@
     });
   }
 
-  async function processAll() {
+  // ── Video Compression via FFmpeg ───────────────────────────────────────
+  async function compressVideo(entry) {
+    const fetchFileFn = (window.FFmpegUtil || window['@ffmpeg/util'])?.fetchFile;
+    if (!fetchFileFn) throw new Error('fetchFile utility not available');
+
+    const ext = (entry.file.name.match(/\.[^.]+$/) || ['.mp4'])[0];
+    const inName  = `in_${entry.id}${ext}`;
+    const outName = `out_${entry.id}.mp4`;
+
+    setProgress(entry.id, 5, 'Reading file…');
+    await ff.writeFile(inName, await fetchFileFn(entry.file));
+
+    setProgress(entry.id, 10, 'Starting encode…');
+
+    const crf    = crfSlider.value;
+    const preset = presetSelect.value;
+    const scale  = parseInt(videoScaleSel.value);
+    const audio  = audioBitrateSelect ? audioBitrateSelect.value : audioBitrateSel.value;
+
+    const args = ['-i', inName, '-c:v', 'libx264', '-crf', String(crf), '-preset', preset];
+    if (scale > 0) args.push('-vf', `scale=${scale}:-2`);
+    if (audio === '0') { args.push('-an'); }
+    else               { args.push('-c:a', 'aac', '-b:a', audio); }
+    args.push('-movflags', '+faststart', '-y', outName);
+
+    // Progress via log parsing
+    let duration = null;
+    const logHandler = ({ message }) => {
+      const dm = message.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+      if (dm) duration = +dm[1]*3600 + +dm[2]*60 + +parseFloat(dm[3]);
+      const tm = message.match(/time=\s*(\d+):(\d+):([\d.]+)/);
+      if (tm && duration) {
+        const elapsed = +tm[1]*3600 + +tm[2]*60 + +parseFloat(tm[3]);
+        const pct = Math.min(94, 10 + Math.round((elapsed / duration) * 84));
+        setProgress(entry.id, pct, `Encoding… ${Math.round(elapsed)}s / ${Math.round(duration)}s`);
+      }
+    };
+    ff.on('log', logHandler);
+
+    try {
+      await ff.exec(args);
+    } finally {
+      ff.off('log', logHandler);
+    }
+
+    setProgress(entry.id, 97, 'Packaging…');
+    const outData = await ff.readFile(outName);
+    const blob = new Blob([outData.buffer], { type: 'video/mp4' });
+
+    try { await ff.deleteFile(inName);  } catch(_){}
+    try { await ff.deleteFile(outName); } catch(_){}
+
+    return blob;
+  }
+
+  // ── Process ────────────────────────────────────────────────────────────
+  processBtn.addEventListener('click', async () => {
     processBtn.disabled = true;
     processBtn.innerHTML = '<span class="spin">⟳</span> Compressing…';
-    downloadAllBtn.style.display = 'none';
+    dlAllBtn.style.display = 'none';
 
     for (const entry of files) {
       if (entry.status === 'done') continue;
-
       const type = entry.file.type;
-      entry.status = 'processing';
-      updateFileStatus(entry);
-
       try {
         if (type.startsWith('image/') && type !== 'image/gif') {
+          setProgress(entry.id, 50, 'Compressing…');
           const blob = await compressImage(entry);
           entry.compressedBlob = blob;
           entry.compressedSize = blob.size;
-          entry.status = blob.size < entry.originalSize ? 'done' : 'skipped';
-          if (entry.status === 'skipped') {
+          if (blob.size < entry.originalSize) {
+            entry.status = 'done';
+          } else {
+            entry.status = 'skipped';
             entry.compressedBlob = entry.file;
             entry.compressedSize = entry.originalSize;
           }
-        } else if (type === 'image/gif') {
-          // GIFs: return as-is (frame manipulation not supported in pure browser without libs)
-          entry.compressedBlob = entry.file;
-          entry.compressedSize = entry.originalSize;
-          entry.status = 'skipped';
-        } else if (type === 'application/pdf') {
-          // PDFs: we can strip metadata by re-encoding via fetch-free approach
-          // Real PDF compression needs a library; we'll do a lossless ArrayBuffer copy
-          const ab = await entry.file.arrayBuffer();
-          const blob = new Blob([ab], { type: 'application/pdf' });
+        } else if (isVideo(type)) {
+          if (!ffReady) {
+            const fs = document.getElementById('fs-' + entry.id);
+            if (fs) fs.innerHTML = `<span class="size-badge" style="color:var(--danger)">FFmpeg not ready</span>`;
+            entry.status = 'error';
+            continue;
+          }
+          const blob = await compressVideo(entry);
           entry.compressedBlob = blob;
           entry.compressedSize = blob.size;
-          entry.status = 'skipped'; // no actual compression without PDF lib
-        } else if (type.startsWith('video/')) {
-          // Video compression via MediaRecorder + canvas (best-effort, limited browser support)
+          // Even if not smaller, offer the re-encoded version
+          entry.status = blob.size < entry.originalSize ? 'done' : 'skipped';
+        } else {
+          // GIF, PDF, etc.
           entry.compressedBlob = entry.file;
           entry.compressedSize = entry.originalSize;
           entry.status = 'skipped';
-        } else {
-          entry.status = 'unsupported';
         }
       } catch(err) {
         console.error(err);
-        entry.status = 'unsupported';
+        entry.status = 'error';
       }
-
-      updateFileStatus(entry);
-      await new Promise(r => setTimeout(r, 40)); // breathing room for repaints
+      setDone(entry);
+      await new Promise(r => setTimeout(r, 40));
     }
 
     processBtn.disabled = false;
     processBtn.innerHTML = 'Compress All Files';
     syncUI();
-  }
+  });
 
-  processBtn.addEventListener('click', processAll);
-
-  // ---------- Download ----------
-  window.downloadFile = function(id) {
+  // ── Download ───────────────────────────────────────────────────────────
+  window.dlFile = id => {
     const entry = files.find(f => f.id === id);
     if (!entry || !entry.compressedBlob) return;
     const url = URL.createObjectURL(entry.compressedBlob);
     const a = document.createElement('a');
     a.href = url;
-
-    const fmt = formatSelect.value;
     let name = entry.file.name;
-    if (fmt !== 'original' && entry.file.type.startsWith('image/')) {
-      const ext = outputExtension(fmt);
-      if (ext) name = name.replace(/\.[^.]+$/, '') + ext;
+    if (isVideo(entry.file.type)) {
+      name = name.replace(/\.[^.]+$/, '') + '_compressed.mp4';
+    } else {
+      const fmt = formatSelect.value;
+      if (fmt !== 'original' && imgExts[fmt]) name = name.replace(/\.[^.]+$/, '') + imgExts[fmt];
     }
-    a.download = name;
-    a.click();
+    a.download = name; a.click();
     URL.revokeObjectURL(url);
   };
 
-  downloadAllBtn.addEventListener('click', async () => {
+  dlAllBtn.addEventListener('click', async () => {
     for (const entry of files) {
-      if (entry.status === 'done' || entry.status === 'skipped') {
-        await new Promise(r => setTimeout(r, 80));
-        downloadFile(entry.id);
-      }
+      if (entry.compressedBlob) { await new Promise(r => setTimeout(r, 120)); dlFile(entry.id); }
     }
   });
 
-  // ---------- Summary ----------
+  // ── Summary ────────────────────────────────────────────────────────────
   function updateSummary() {
-    const doneFiles = files.filter(f => f.status === 'done' || f.status === 'skipped');
-    if (doneFiles.length === 0) return;
-    const orig = doneFiles.reduce((s, f) => s + f.originalSize, 0);
-    const comp = doneFiles.reduce((s, f) => s + (f.compressedSize || f.originalSize), 0);
+    const done = files.filter(f => f.compressedSize !== null);
+    if (!done.length) return;
+    const orig  = done.reduce((s,f) => s + f.originalSize, 0);
+    const comp  = done.reduce((s,f) => s + (f.compressedSize || f.originalSize), 0);
     const saved = orig - comp;
-    const pct = orig > 0 ? Math.round((saved / orig) * 100) : 0;
-    sumOriginal.textContent   = fmtBytes(orig);
-    sumCompressed.textContent = fmtBytes(comp);
-    sumSaved.textContent      = (saved > 0 ? '−' : '') + fmtBytes(Math.abs(saved));
-    sumPct.textContent        = pct + '%';
+    const pct   = orig > 0 ? Math.round((saved/orig)*100) : 0;
+    $('sumOrig').textContent  = fmtBytes(orig);
+    $('sumComp').textContent  = fmtBytes(comp);
+    $('sumSaved').textContent = (saved > 0 ? '−' : '') + fmtBytes(Math.abs(saved));
+    $('sumPct').textContent   = pct + '%';
   }
 
-  // Init hint
   emptyHint.style.display = 'block';
+})();
 </script>
 </body>
 </html>
